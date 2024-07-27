@@ -19,6 +19,15 @@ DateTime time_t_values[] = {
     DateTime(2021, 1, 1, 14, 0, 0),
 };
 
+void toggleButton()
+{
+  // Set servo to 127 degrees and then back to 0 degrees
+  analogWrite(SERVO_PIN, 127);
+  delay(100);
+  analogWrite(SERVO_PIN, 0); // initialize servo to 0 degrees
+  delay(100);
+}
+
 void setup()
 {
   Serial.begin(9600);
@@ -29,12 +38,6 @@ void setup()
   else
   {
     Serial.println("RTC connected!");
-  }
-
-  // Get the current time from the RTC module
-  if (!rtc.isrunning())
-  {
-    Serial.println("RTC is not running!");
     rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
   }
 
@@ -42,7 +45,7 @@ void setup()
   // This is done to ensure that the comparison is accurate
   // Leave the time values as they are
   DateTime now = rtc.now();
-  for (int i = 0; i < sizeof(time_t_values) / sizeof(time_t); i++)
+  for (size_t i = 0; i < sizeof(time_t_values) / sizeof(time_t); i++)
   {
     time_t_values[i] = DateTime(now.year(), now.month(), now.day(), time_t_values[i].hour(), time_t_values[i].minute(), time_t_values[i].second());
   }
@@ -59,7 +62,7 @@ void loop()
 {
   DateTime now = rtc.now();
 
-  for (int i = 0; i < sizeof(time_t_values) / sizeof(time_t); i++)
+  for (size_t i = 0; i < sizeof(time_t_values) / sizeof(time_t); i++)
   {
     DateTime compareTime = time_t_values[i];
     if (now == compareTime)
@@ -71,11 +74,3 @@ void loop()
   }
 }
 
-void toggleButton()
-{
-  // Set servo to 127 degrees and then back to 0 degrees
-  analogWrite(SERVO_PIN, 127);
-  delay(100);
-  analogWrite(SERVO_PIN, 0); // initialize servo to 0 degrees
-  delay(100);
-}
