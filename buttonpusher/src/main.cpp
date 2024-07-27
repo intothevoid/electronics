@@ -1,35 +1,81 @@
+// This code simulates a button pusher that activates a servo motor at specific times of the day.
+// The times are defined in the time_t_values array, and the code compares the current time with these values.
+// If a match is found, the servo is activated and moves from 0 to 180 degrees.
+
 #include <Arduino.h>
-#include <Wire.h>  // for I2C communication with RTC module
-#include <RTClib.h>  // for date and time handling
+#include <Wire.h>   // for I2C communication with RTC module
+#include <RTClib.h> // for date and time handling
+#include <time.h>
 
-RTC_DS3231 rtc;  // define the RTC object
-time_t time_t_values[] = {Time(07, 30, 0), Time(09, 30, 0), Time(12,0,0), Time(14,0,0)};  // example time values
+RTC_DS3231 rtc;          // define the RTC object
+const int SERVO_PIN = 8; // define the pin for the servo motor
 
-void setup() {
+// The times at which the servo should be activated i.e. button pushed
+// The year, month and day are set to the current date, and the time is set to the desired time
+DateTime time_t_values[] = {
+    DateTime(2021, 1, 1, 7, 30, 0),
+    DateTime(2021, 1, 1, 9, 0, 0),
+    DateTime(2021, 1, 1, 12, 0, 0),
+    DateTime(2021, 1, 1, 14, 0, 0),
+};
+
+void setup()
+{
   Serial.begin(9600);
-  if (!rtc.begin()) {
+  if (!rtc.begin())
+  {
     Serial.println("RTC not connected!");
-  } else {
+  }
+  else
+  {
     Serial.println("RTC connected!");
   }
+
+  // Get the current time from the RTC module
+  if (!rtc.isrunning())
+  {
+    Serial.println("RTC is not running!");
+    rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
+  }
+
+  // Iterate through the time_t_values array and update the year, month and day to the current date
+  // This is done to ensure that the comparison is accurate
+  // Leave the time values as they are
+  DateTime now = rtc.now();
+  for (int i = 0; i < sizeof(time_t_values) / sizeof(time_t); i++)
+  {
+    time_t_values[i] = DateTime(now.year(), now.month(), now.day(), time_t_values[i].hour(), time_t_values[i].minute(), time_t_values[i].second());
+  }
+
+  // Initialize the servo motor
+  pinMode(SERVO_PIN, OUTPUT);
+
+  delay(100);
+  analogWrite(SERVO_PIN, 0); // initialize servo to 0 degrees
+  Serial.println("Setup complete!");
 }
 
-void loop() {
-  Time now = rtc.now();
+void loop()
+{
+  DateTime now = rtc.now();
 
-  for (int i = 0; i < sizeof(time_t_values) / sizeof(time_t); i++) {
-    Time compareTime = time_t_values[i];
-    if (now == compareTime) {
+  for (int i = 0; i < sizeof(time_t_values) / sizeof(time_t); i++)
+  {
+    DateTime compareTime = time_t_values[i];
+    if (now == compareTime)
+    {
       Serial.println("Matched time!");
-      // Activate servo and move it from 0-180 degrees
-      analogWrite(SERVO_PIN, 0);  // initialize servo to 0 degrees
-      delay(2000);
-      for (int deg = 1; deg <= 180; deg++) {
-        analogWrite(SERVO_PIN, map(deg, 0, 180, 0, 255));
-        delay(10);
-      }
+      toggleButton();
       break;
     }
   }
 }
 
+void toggleButton()
+{
+  // Set servo to 127 degrees and then back to 0 degrees
+  analogWrite(SERVO_PIN, 127);
+  delay(100);
+  analogWrite(SERVO_PIN, 0); // initialize servo to 0 degrees
+  delay(100);
+}
